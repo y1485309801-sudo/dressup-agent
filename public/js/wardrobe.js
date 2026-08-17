@@ -6,7 +6,17 @@ const STATUS_LABELS = {
 };
 
 function values(value) {
-  return String(value || '').split(/[,，]/).map(item => item.trim()).filter(Boolean);
+  return String(value || '').split(/[,，、]/).map(item => item.trim()).filter(Boolean);
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+
+export function tagSourceForState(state) {
+  return state === 'manual' ? 'manual' : 'ai';
 }
 
 async function fileToCompressedDataUrl(file) {
@@ -53,9 +63,9 @@ export function createWardrobeController({ store, api }) {
     for (const garment of garments) {
       const card = document.createElement('article');
       card.className = `garment-card ${garment.status === 'available' ? '' : 'unavailable'}`;
-      card.innerHTML = `<img src="${garment.imgSrc}" alt="${garment.subtype || garment.category}">
-        <span class="status-dot">${STATUS_LABELS[garment.status] || garment.status}</span>
-        <div class="garment-meta"><strong>${garment.subtype || garment.category}</strong><span>${garment.primaryColor || '未标颜色'} · ${garment.thickness}</span></div>`;
+      card.innerHTML = `<img src="${escapeHtml(garment.imgSrc)}" alt="${escapeHtml(garment.subtype || garment.category)}">
+        <span class="status-dot">${escapeHtml(STATUS_LABELS[garment.status] || garment.status)}</span>
+        <div class="garment-meta"><strong>${escapeHtml(garment.subtype || garment.category)}</strong><span>${escapeHtml(garment.primaryColor || '未标颜色')} · ${escapeHtml(garment.thickness)}</span></div>`;
       card.onclick = () => {
         const next = window.prompt('状态：available / laundry / stored / disabled', garment.status);
         if (!STATUS_LABELS[next]) return;
@@ -102,6 +112,7 @@ export function createWardrobeController({ store, api }) {
   form.addEventListener('submit', event => {
     event.preventDefault();
     if (!imageDataUrl || state === 'saving') return;
+    const tagSource = tagSourceForState(state);
     state = 'saving';
     const garments = store.getGarments();
     const garment = {
@@ -120,7 +131,7 @@ export function createWardrobeController({ store, api }) {
       styles: values(form.elements.styles.value),
       functional: [],
       tagConfidence: null,
-      tagSource: state === 'manual' ? 'manual' : 'ai',
+      tagSource,
       status: form.elements.status.value,
       fav: false,
       worn: 0,

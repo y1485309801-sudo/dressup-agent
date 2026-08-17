@@ -4,6 +4,16 @@ const VARIANT_LABELS = {
   style: '更有风格'
 };
 
+export function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[character]);
+}
+
 export function buildAgentPayload({ message, profile, garments, history = [], session = null }) {
   return {
     message: String(message || '').trim(),
@@ -89,7 +99,7 @@ export function createAgentController({ store, api, onNavigate }) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'outfit-garment';
-        button.innerHTML = `<img src="${garment.imgSrc}" alt="${garmentLabel(garment)}"><span>${garmentLabel(garment)}</span>`;
+        button.innerHTML = `<img src="${escapeHtml(garment.imgSrc)}" alt="${escapeHtml(garmentLabel(garment))}"><span>${escapeHtml(garmentLabel(garment))}</span>`;
         button.addEventListener('click', () => {
           const keep = window.confirm('保留这件？点“取消”可选择不要这件。');
           submit(`${keep ? '保留' : '不要'}这件 ${garment.id}`, true);
