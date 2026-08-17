@@ -67,3 +67,24 @@ test('profile requires a city and temperature sensitivity', () => {
   }));
   assert.equal(store.getProfile().city, '上海');
 });
+
+
+test('recording worn updates garment recency and preserves a reversible event', () => {
+  const store = createStore(fakeStorage());
+  store.saveGarments([
+    { id: 'top1', imgSrc: 'data:x', category: 'top', status: 'available', worn: 0 },
+    { id: 'pants1', imgSrc: 'data:y', category: 'bottom', status: 'available', worn: 0 }
+  ]);
+
+  const event = store.recordFeedback({
+    type: 'worn',
+    outfitId: 'o1',
+    garmentIds: ['top1', 'pants1']
+  });
+
+  assert.equal(store.getGarment('top1').worn, 1);
+  assert.equal(store.getFeedback().at(-1).id, event.id);
+  store.undoFeedback(event.id);
+  assert.equal(store.getGarment('top1').worn, 0);
+  assert.equal(store.getFeedback().at(-1).undoneAt != null, true);
+});
