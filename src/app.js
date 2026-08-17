@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createWeatherRouter } from './routes/weather.js';
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const publicDirectory = path.resolve(currentDirectory, '../public');
@@ -45,6 +46,10 @@ export function createApp({ config = {}, services = {} } = {}) {
       return next(error);
     }
   });
+
+  if (services.weather) {
+    app.use('/api/weather', createWeatherRouter({ weather: services.weather }));
+  }
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'API_ROUTE_NOT_FOUND' });
