@@ -16,8 +16,12 @@ function destinationCity(message) {
 
 function referencedId(message, prefix, garments, selectedIds) {
   const selected = new Set(selectedIds || []);
+  const action = prefix.startsWith('保留') ? '保留' : /不要/.test(prefix) ? '不要' : '换掉';
+  const actionIndex = message.indexOf(action);
+  if (actionIndex < 0) return null;
+  const segment = message.slice(actionIndex + action.length).split(/[，,。；;]/)[0];
   const categoryEntry = CATEGORY_TERMS.find(entry =>
-    entry.terms.some(term => message.includes(`${prefix}${term}`) || message.includes(term))
+    entry.terms.some(term => segment.includes(term))
   );
   if (!categoryEntry) return null;
   return garments.find(item => selected.has(item.id) && item.category === categoryEntry.category)?.id ||
