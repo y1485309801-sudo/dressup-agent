@@ -79,6 +79,7 @@ export function createAgentController({ store, api, onNavigate }) {
         <div class="outfit-actions">
           <button class="wear-button" data-action="wear">穿这套</button>
           <button data-action="change">换一套</button>
+          <button data-action="like">收藏</button>
           <button data-action="calendar">加入日历</button>
           <button data-action="tryon">AI 试穿</button>
           <button data-action="dislike">不喜欢</button>
@@ -96,12 +97,29 @@ export function createAgentController({ store, api, onNavigate }) {
         garmentRoot.append(button);
       }
       card.querySelector('[data-action="change"]').onclick = () => submit('换一套', true);
-      card.querySelector('[data-action="dislike"]').onclick = () => submit('不要这套，换一套', true);
-      card.querySelector('[data-action="tryon"]').onclick = () => onNavigate('tryon');
+      card.querySelector('[data-action="like"]').onclick = () => {
+        store.recordFeedback({ type: 'liked', outfitId: outfit.id, garmentIds: outfit.garmentIds, sessionId: session?.id });
+        setState('已收藏这套搭配。');
+      };
+      card.querySelector('[data-action="dislike"]').onclick = () => {
+        const reason = window.prompt('哪里不合适？可填：太冷 / 太热 / 太正式 / 太休闲 / 颜色 / 某件单品', '某件单品');
+        store.recordFeedback({ type: 'disliked', reason: reason || 'unspecified', outfitId: outfit.id, garmentIds: outfit.garmentIds, sessionId: session?.id });
+        submit('不要这套，换一套', true);
+      };
+      card.querySelector('[data-action="tryon"]').onclick = () => {
+        store.saveTryOnSelection({ outfitId: outfit.id, garmentIds: outfit.garmentIds, createdAt: new Date().toISOString() });
+        onNavigate('tryon');
+      };
       card.querySelector('[data-action="wear"]').onclick = () => {
         const history = store.getHistory();
         store.saveHistory([{ ...outfit, wornAt: new Date().toISOString() }, ...history]);
-        setState('已记录今天穿这套。');
+        const event = store.recordFeedback({ type: 'worn', outfitId: outfit.id, garmentIds: outfit.garmentIds, sessionId: session?.id });
+        setState('已记录今天穿这套。再次点击消息可在“我的”反馈记录中撤销。');
+        stateRoot.onclick = () => {
+          store.undoFeedback(event.id);
+          setState('已撤销穿着记录。');
+          stateRoot.onclick = null;
+        };
       };
       card.querySelector('[data-action="calendar"]').onclick = () => {
         const calendar = store.getCalendar();

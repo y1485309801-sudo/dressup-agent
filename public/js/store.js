@@ -5,6 +5,8 @@ const KEYS = {
   calendar: 'dressup_v2_calendar',
   inspo: 'dressup_v2_inspo',
   history: 'dressup_v2_history',
+  feedback: 'dressup_v2_feedback',
+  tryOn: 'dressup_v2_try_on',
   migrated: 'dressup_v2_migrated'
 };
 
@@ -75,6 +77,12 @@ function migrate(storage) {
   if (storage.getItem(KEYS.history) === null) {
     storage.setItem(KEYS.history, JSON.stringify([]));
   }
+  if (storage.getItem(KEYS.feedback) === null) {
+    storage.setItem(KEYS.feedback, JSON.stringify([]));
+  }
+  if (storage.getItem(KEYS.tryOn) === null) {
+    storage.setItem(KEYS.tryOn, JSON.stringify(null));
+  }
 
   storage.setItem(KEYS.migrated, 'true');
 }
@@ -115,7 +123,48 @@ export function createStore(storage = globalThis.localStorage) {
     getInspo: () => read(KEYS.inspo, []),
     saveInspo: inspo => write(KEYS.inspo, inspo),
     getHistory: () => read(KEYS.history, []),
-    saveHistory: history => write(KEYS.history, history)
+    saveHistory: history => write(KEYS.history, history),
+    getGarment: id => read(KEYS.garments, []).map(migrateGarment).find(item => item.id === id) || null,
+    getFeedback: () => read(KEYS.feedback, []),
+    recordFeedback(feedback) {
+      const createdAt = new Date().toISOString();
+      const event = {
+        ...feedback,
+        id: `feedback-${globalThis.crypto?.randomUUID?.() || Date.now()}`,
+        garmentIds: Array.isArray(feedback.garmentIds) ? feedback.garmentIds : [],
+        createdAt
+      };
+      if (event.type === 'worn') {
+        const ids = new Set(event.garmentIds);
+        const garments = read(KEYS.garments, []).map(migrateGarment).map(item =>
+          ids.has(item.id)
+            ? { ...item, worn: item.worn + 1, lastWornAt: createdAt }
+            : item
+        );
+        write(KEYS.garments, garments);
+      }
+      write(KEYS.feedback, [...read(KEYS.feedback, []), event]);
+      return event;
+    },
+    undoFeedback(eventId) {
+      const events = read(KEYS.feedback, []);
+      const event = events.find(item => item.id === eventId);
+      if (!event || event.undoneAt) return false;
+      const undoneAt = new Date().toISOString();
+      if (event.type === 'worn') {
+        const ids = new Set(event.garmentIds);
+        const garments = read(KEYS.garments, []).map(migrateGarment).map(item =>
+          ids.has(item.id)
+            ? { ...item, worn: Math.max(0, item.worn - 1) }
+            : item
+        );
+        write(KEYS.garments, garments);
+      }
+      write(KEYS.feedback, events.map(item => item.id === eventId ? { ...item, undoneAt } : item));
+      return true;
+    },
+    getTryOnSelection: () => read(KEYS.tryOn, null),
+    saveTryOnSelection: selection => write(KEYS.tryOn, selection)
   };
 }
 
