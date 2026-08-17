@@ -168,7 +168,7 @@ function selectVariants(candidates, limit) {
   for (const variant of VARIANTS.slice(0, limit)) {
     const ranked = [...candidates].sort((left, right) => {
       const adjust = item => {
-        if (variant === 'comfort') return item.score + item.warmth * 2;
+        if (variant === 'comfort') return item.score + item.warmth * 8;
         if (variant === 'style') return item.score + item.styleMatches * 6;
         return item.score;
       };
