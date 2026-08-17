@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildAgentPayload, mapOutfitsToCards } from '../public/js/agent.js';
+import { buildAgentPayload, escapeHtml, mapOutfitsToCards } from '../public/js/agent.js';
+import { tagSourceForState } from '../public/js/wardrobe.js';
 
 test('Agent payload sends metadata for available garments without local images', () => {
   const payload = buildAgentPayload({
@@ -31,4 +32,14 @@ test('visual cards reject unknown and unavailable garment ids', () => {
   ], garments);
 
   assert.deepEqual(cards.map(card => card.id), ['ok']);
+});
+
+
+test('editable garment labels are escaped before card HTML rendering', () => {
+  assert.equal(escapeHtml('<img src=x onerror=alert(1)>'), '&lt;img src=x onerror=alert(1)&gt;');
+});
+
+test('manual garment review is stored with a manual tag source', () => {
+  assert.equal(tagSourceForState('manual'), 'manual');
+  assert.equal(tagSourceForState('review'), 'ai');
 });
