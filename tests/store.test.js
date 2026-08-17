@@ -47,3 +47,23 @@ test('migration is idempotent once the v2 marker is written', () => {
 
   assert.deepEqual(second, first);
 });
+
+
+test('profile requires a city and temperature sensitivity', () => {
+  const store = createStore(fakeStorage());
+
+  assert.throws(
+    () => store.saveProfile({ city: '', temperatureSensitivity: 'normal' }),
+    /city/
+  );
+  assert.doesNotThrow(() => store.saveProfile({
+    city: '上海',
+    temperatureSensitivity: 'normal',
+    styles: [],
+    likedColors: [],
+    avoidedColors: [],
+    forbidden: [],
+    accessories: true
+  }));
+  assert.equal(store.getProfile().city, '上海');
+});
