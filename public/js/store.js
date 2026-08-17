@@ -4,6 +4,7 @@ const KEYS = {
   profile: 'dressup_v2_profile',
   calendar: 'dressup_v2_calendar',
   inspo: 'dressup_v2_inspo',
+  history: 'dressup_v2_history',
   migrated: 'dressup_v2_migrated'
 };
 
@@ -22,7 +23,7 @@ function strings(value) {
 
 function migrateGarment(value = {}) {
   return {
-    id: String(value.id || `garment-${crypto.randomUUID?.() || Date.now()}`),
+    id: String(value.id || `garment-${globalThis.crypto?.randomUUID?.() || Date.now()}`),
     imgSrc: String(value.imgSrc || ''),
     category: String(value.category || 'other'),
     subtype: String(value.subtype || ''),
@@ -71,8 +72,25 @@ function migrate(storage) {
   if (storage.getItem(KEYS.inspo) === null) {
     storage.setItem(KEYS.inspo, JSON.stringify(legacyInspo));
   }
+  if (storage.getItem(KEYS.history) === null) {
+    storage.setItem(KEYS.history, JSON.stringify([]));
+  }
 
   storage.setItem(KEYS.migrated, 'true');
+}
+
+function normalizedProfile(profile = {}) {
+  const city = typeof profile.city === 'string' ? profile.city.trim() : '';
+  const temperatureSensitivity = profile.temperatureSensitivity || '';
+  if (!city) throw new TypeError('city is required');
+  if (!['cold', 'normal', 'neutral', 'warm'].includes(temperatureSensitivity)) {
+    throw new TypeError('temperatureSensitivity is required');
+  }
+  const arrays = ['styles', 'likedColors', 'avoidedColors', 'forbidden'];
+  const result = { ...profile, city, temperatureSensitivity, schemaVersion: SCHEMA_VERSION };
+  for (const key of arrays) result[key] = Array.isArray(profile[key]) ? profile[key] : [];
+  result.accessories = profile.accessories !== false;
+  return result;
 }
 
 export function createStore(storage = globalThis.localStorage) {
@@ -91,11 +109,13 @@ export function createStore(storage = globalThis.localStorage) {
     getGarments: () => read(KEYS.garments, []).map(migrateGarment),
     saveGarments: garments => write(KEYS.garments, garments.map(migrateGarment)),
     getProfile: () => read(KEYS.profile, {}),
-    saveProfile: profile => write(KEYS.profile, { ...profile, schemaVersion: SCHEMA_VERSION }),
+    saveProfile: profile => write(KEYS.profile, normalizedProfile(profile)),
     getCalendar: () => read(KEYS.calendar, {}),
     saveCalendar: calendar => write(KEYS.calendar, calendar),
     getInspo: () => read(KEYS.inspo, []),
-    saveInspo: inspo => write(KEYS.inspo, inspo)
+    saveInspo: inspo => write(KEYS.inspo, inspo),
+    getHistory: () => read(KEYS.history, []),
+    saveHistory: history => write(KEYS.history, history)
   };
 }
 
