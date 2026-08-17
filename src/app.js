@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRateLimiter } from './middleware/rate-limit.js';
 import { createAgentRouter } from './routes/agent.js';
 import { createGarmentRouter } from './routes/garments.js';
 import { createWeatherRouter } from './routes/weather.js';
@@ -46,10 +47,15 @@ export function createApp({ config = {}, services = {} } = {}) {
   });
 
   if (services.weather) app.use('/api/weather', createWeatherRouter({ weather: services.weather }));
+  const aiRateLimiter = createRateLimiter(config.rateLimit);
   if (services.garmentAnalyzer) {
+    app.use('/api/garments/analyze', aiRateLimiter);
     app.use('/api/garments', createGarmentRouter({ analyzer: services.garmentAnalyzer }));
   }
-  if (services.agent) app.use('/api/agent', createAgentRouter({ agent: services.agent }));
+  if (services.agent) {
+    app.use('/api/agent', aiRateLimiter);
+    app.use('/api/agent', createAgentRouter({ agent: services.agent }));
+  }
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'API_ROUTE_NOT_FOUND' });

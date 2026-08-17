@@ -15,6 +15,10 @@ export function loadConfig(env = process.env) {
     aiChatModel: env.AI_CHAT_MODEL || '',
     aiConfigured: Boolean(env.AI_BASE_URL && env.AI_API_KEY && env.AI_CHAT_MODEL),
     weatherBaseUrl: (env.WEATHER_API_BASE_URL || 'https://api.open-meteo.com')
-      .replace(/\/$/, '')
+      .replace(/\/$/, ''),
+    rateLimit: {
+      limit: Number(env.RATE_LIMIT_MAX || 30),
+      windowMs: Number(env.RATE_LIMIT_WINDOW_MS || 60_000)
+    }
   };
 }

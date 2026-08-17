@@ -1,23 +1,59 @@
 # Dressup Agent
 
-AI outfit recommendation agent with wardrobe, weather, calendar, and virtual try-on.
+一个本地优先的穿搭推荐 Agent：用户设置常住城市后自动读取天气，上传衣物后可用 AI 识别并修改标签，再根据“今天要去做什么”从现有衣橱中返回 2～3 套可视化搭配。
 
-## Current baseline
+## 已实现的 MVP
 
-- Mobile wardrobe interface
-- Outfit calendar and inspiration collection
-- Jimeng AI virtual try-on proxy
-- Approved outfit recommendation Agent design under `docs/superpowers/specs/`
+- 首次设置常住城市和怕冷/怕热偏好
+- Open-Meteo 兼容天气查询、30 分钟缓存与手动天气兜底提示
+- 衣物图片压缩、AI 自动标签、低置信度复核与手动编辑
+- 可穿 / 清洗中 / 已收纳 / 停用状态
+- 只使用 `available` 且属于用户衣橱的衣物
+- 确定性天气硬过滤、场合/偏好/配色/近期穿着评分
+- 2～3 套“最稳妥 / 更舒适 / 更有风格”搭配卡
+- 连续对话：换一套、正式一点、休闲一点、暖和一点、凉快一点、保留/排除某件
+- 衣橱缺口说明、反馈撤销、穿搭日历与显式 AI 试穿预选
 
-## Local development
+## 本地运行
+
+需要 Node.js 18 或更高版本（CI 使用 Node.js 22）。
 
 ```bash
 npm install
+npm test
 npm start
 ```
 
-Open `index.html` in a browser for the current frontend prototype. Configure secrets only through environment variables; never commit `.env` or API credentials.
+打开 <http://localhost:3001>。健康检查：<http://localhost:3001/health>。
 
-## Security
+## 环境变量
 
-Legacy Python test files containing hard-coded credentials are intentionally not migrated. Rotate any previously exposed Volcengine credentials before deploying this repository.
+复制 `.env.example` 到你自己的运行环境；不要提交 `.env`。
+
+| 变量 | 用途 | 必需 |
+| --- | --- | --- |
+| `PORT` | 服务端口，默认 3001 | 否 |
+| `BASE_URL` | 对外服务地址 | 否 |
+| `ALLOWED_ORIGINS` | 允许跨域来源，逗号分隔 | 否 |
+| `WEATHER_API_BASE_URL` | Open-Meteo 兼容天气 API | 否 |
+| `AI_BASE_URL` | OpenAI 兼容 API 基址 | AI 标签时 |
+| `AI_API_KEY` | AI 服务密钥 | AI 标签时 |
+| `AI_VISION_MODEL` | 多模态识别模型 | AI 标签时 |
+| `AI_CHAT_MODEL` | 对话文案模型 | AI 对话时 |
+| `JIMENG_AK` / `JIMENG_SK` | 即梦换装服务凭据 | 启用换装时 |
+| `RATE_LIMIT_MAX` | 每个窗口的 AI 请求数，默认 30 | 否 |
+| `RATE_LIMIT_WINDOW_MS` | 限流窗口，默认 60000 ms | 否 |
+
+AI 未配置或不可用时，上传流程会进入同一个手动标签编辑器；天气失败时，Agent 会提示用户在对话中补充温度/天气。所有密钥只允许出现在服务端环境变量中。
+
+## 数据与隐私
+
+衣橱、资料、会话、反馈和日历保存在当前浏览器的 `localStorage`。推荐请求只上传衣物标签元数据，不上传衣橱图片；只有衣物识别时才发送当前选择的图片。清除浏览器数据会删除本地资料，当前 MVP 不提供账号或云同步。
+
+## 安全提醒
+
+旧 Python 测试脚本曾包含硬编码的火山引擎凭据，已明确排除在新仓库之外。部署前必须轮换任何曾暴露的 AK/SK。CI 会运行测试、语法检查、凭据模式扫描、启动和 HTTP 冒烟检查。
+
+## 第一阶段不包含
+
+社区、商品内容、淘宝/抖音跳转、联盟返佣、账号系统、多人共享和云端同步暂不在本阶段实现。购买匹配功能将在穿搭推荐 MVP 稳定后单独设计。
