@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f7f4ef">
+  <title>Dressup Agent</title>
+  <link rel="stylesheet" href="/styles/app.css">
+  <link rel="stylesheet" href="/styles/agent.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">DRESSUP AGENT</p>
+        <h1>今天穿什么？</h1>
+      </div>
+      <button id="weatherChip" class="weather-chip" type="button" aria-live="polite">
+        <span class="weather-icon">◌</span>
+        <span class="weather-copy"><strong>设置城市</strong><small>获取天气</small></span>
+      </button>
+    </header>
+
+    <main>
+      <section class="page active" data-page="recommend">
+        <div class="hero-card">
+          <div>
+            <span class="soft-pill">只用你的衣橱</span>
+            <h2>告诉我今天要去做什么</h2>
+            <p>我会结合地点、天气和你的衣服，给出 2～3 套能直接穿的搭配。</p>
+          </div>
+          <div class="hero-orb" aria-hidden="true">✦</div>
+        </div>
+
+        <div class="quick-prompts" aria-label="快捷提问">
+          <button type="button" data-prompt="今天上班穿什么">今天上班</button>
+          <button type="button" data-prompt="今晚和朋友吃饭">朋友聚餐</button>
+          <button type="button" data-prompt="明天去杭州见客户">异地见客户</button>
+        </div>
+
+        <div id="conversation" class="conversation" aria-live="polite">
+          <article class="message agent-message">
+            <div class="avatar">D</div>
+            <div class="bubble">先说说你今天要去哪里、做什么吧。比如：“明天去杭州见客户”。</div>
+          </article>
+        </div>
+        <div id="agentState" class="agent-state hidden"></div>
+        <div id="outfitCards" class="outfit-list"></div>
+
+        <form id="agentForm" class="composer">
+          <textarea id="agentInput" rows="1" maxlength="240" placeholder="今天要去做什么？"></textarea>
+          <button class="send-button" type="submit" aria-label="发送">↑</button>
+        </form>
+      </section>
+
+      <section class="page" data-page="wardrobe">
+        <div class="section-heading">
+          <div><p class="eyebrow">MY WARDROBE</p><h2>我的衣橱</h2></div>
+          <label class="primary-button upload-button">＋ 添加衣服<input id="garmentFile" type="file" accept="image/jpeg,image/png,image/webp" hidden></label>
+        </div>
+        <div class="wardrobe-summary">
+          <span><strong id="availableCount">0</strong> 件可穿</span>
+          <span id="wardrobeHint">上传后由 AI 自动识别标签</span>
+        </div>
+        <div id="wardrobeGrid" class="wardrobe-grid"></div>
+        <div id="emptyWardrobe" class="empty-state">
+          <div class="empty-icon">◇</div><h3>衣橱还是空的</h3>
+          <p>先上传几件常穿单品，AI 会帮你识别类别、颜色和厚度。</p>
+        </div>
+      </section>
+
+      <section class="page" data-page="tryon">
+        <div class="section-heading"><div><p class="eyebrow">AI TRY-ON</p><h2>AI 换装</h2></div></div>
+        <div class="feature-card">
+          <div class="feature-art">◒</div>
+          <h3>先选搭配，再决定是否试穿</h3>
+          <p>推荐过程不会自动生成图片。只有你明确点击穿搭卡片上的“AI 试穿”并确认后，才会调用换装服务。</p><p id="tryOnSelection" class="form-notice">还没有预选搭配。</p>
+          <button class="secondary-button" data-nav="recommend" type="button">去选一套搭配</button>
+        </div>
+      </section>
+
+      <section class="page" data-page="calendar">
+        <div class="section-heading"><div><p class="eyebrow">OUTFIT PLAN</p><h2>穿搭日历</h2></div></div>
+        <div id="calendarList" class="calendar-list"></div>
+        <div class="empty-state" id="emptyCalendar"><div class="empty-icon">□</div><h3>还没有计划</h3><p>在推荐卡片上点击“加入日历”，就会出现在这里。</p></div>
+      </section>
+
+      <section class="page" data-page="profile">
+        <div class="section-heading"><div><p class="eyebrow">PREFERENCES</p><h2>我的偏好</h2></div></div>
+        <form id="profileForm" class="panel-form">
+          <label>常住城市<input name="city" autocomplete="address-level2" required placeholder="例如：上海"></label>
+          <fieldset><legend>体感偏好</legend><div class="segmented">
+            <label><input type="radio" name="temperatureSensitivity" value="cold"><span>比较怕冷</span></label>
+            <label><input type="radio" name="temperatureSensitivity" value="normal" checked><span>正常</span></label>
+            <label><input type="radio" name="temperatureSensitivity" value="warm"><span>比较怕热</span></label>
+          </div></fieldset>
+          <label>喜欢的风格<input name="styles" placeholder="简约、通勤、复古（逗号分隔）"></label>
+          <label>避开的颜色<input name="avoidedColors" placeholder="例如：荧光绿"></label>
+          <button class="primary-button full" type="submit">保存偏好</button>
+          <p id="profileNotice" class="form-notice"></p>
+        </form>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="主导航">
+      <button class="active" data-nav="recommend" type="button"><span>✦</span>推荐</button>
+      <button data-nav="wardrobe" type="button"><span>◇</span>衣橱</button>
+      <button data-nav="tryon" type="button"><span>◒</span>换装</button>
+      <button data-nav="calendar" type="button"><span>□</span>日历</button>
+      <button data-nav="profile" type="button"><span>○</span>我的</button>
+    </nav>
+  </div>
+
+  <dialog id="onboardingDialog" class="sheet onboarding-sheet">
+    <form id="onboardingForm" method="dialog">
+      <div class="sheet-handle"></div><span class="soft-pill">首次设置</span>
+      <h2>先告诉我你常住哪里</h2>
+      <p>之后每次打开，Agent 都会自动查询当天的天气。</p>
+      <label>常住城市<input name="city" required autofocus placeholder="例如：上海"></label>
+      <fieldset><legend>你更怕冷还是怕热？</legend><div class="segmented vertical">
+        <label><input type="radio" name="temperatureSensitivity" value="cold"><span>比较怕冷</span></label>
+        <label><input type="radio" name="temperatureSensitivity" value="normal" checked><span>正常</span></label>
+        <label><input type="radio" name="temperatureSensitivity" value="warm"><span>比较怕热</span></label>
+      </div></fieldset>
+      <button class="primary-button full" type="submit">开始使用</button>
+    </form>
+  </dialog>
+
+  <dialog id="garmentDialog" class="sheet garment-sheet">
+    <form id="garmentForm" method="dialog">
+      <div class="sheet-handle"></div>
+      <div class="garment-review-head"><img id="garmentPreview" alt="待添加衣物"><div><span id="analysisBadge" class="soft-pill">准备识别</span><h2>确认衣物标签</h2></div></div>
+      <div id="analysisNotice" class="form-notice"></div>
+      <div class="form-grid">
+        <label>类别<select name="category" required><option value="top">上装</option><option value="bottom">下装</option><option value="outer">外套</option><option value="dress">连衣装</option><option value="shoes">鞋</option><option value="bag">包</option><option value="accessory">配饰</option><option value="other">其他</option></select></label>
+        <label>具体款式<input name="subtype" placeholder="例如：风衣"></label>
+        <label>主色<input name="primaryColor" required placeholder="例如：米色"></label>
+        <label>厚度<select name="thickness"><option value="light">薄</option><option value="medium">中等</option><option value="heavy">厚</option></select></label>
+        <label>适合季节<input name="seasons" placeholder="spring,autumn"></label>
+        <label>风格<input name="styles" placeholder="minimal,classic"></label>
+        <label>状态<select name="status"><option value="available">可穿</option><option value="laundry">清洗中</option><option value="stored">已收纳</option><option value="disabled">停用</option></select></label>
+      </div>
+      <div class="sheet-actions"><button id="cancelGarment" class="secondary-button" type="button">取消</button><button class="primary-button" type="submit">保存到衣橱</button></div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
