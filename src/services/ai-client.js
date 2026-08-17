@@ -39,10 +39,12 @@ export function createAiClient(config = {}, fetchFn = globalThis.fetch) {
               { role: 'system', content: system },
               {
                 role: 'user',
-                content: [
-                  { type: 'text', text: prompt },
-                  { type: 'image_url', image_url: { url: imageDataUrl } }
-                ]
+                content: imageDataUrl
+                  ? [
+                      { type: 'text', text: prompt },
+                      { type: 'image_url', image_url: { url: imageDataUrl } }
+                    ]
+                  : prompt
               }
             ]
           })
